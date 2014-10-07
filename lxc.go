@@ -2,6 +2,8 @@ package lxc
 
 import (
 	"github.com/s-kostyaev/go-cgroup"
+	"strconv"
+	"strings"
 )
 
 func GetMemoryLimit(container string) (int, error) {
@@ -22,4 +24,25 @@ func GetMemoryUsage(container string) (int, error) {
 			cgroup.MemoryUsage)
 	}
 	return usage, err
+}
+
+func GetPids(container string) ([]int, error) {
+	result := []int{}
+	pids, err := cgroup.GetParam("cpuacct/lxc/"+container,
+		"cgroup.procs")
+	if err != nil {
+		pids, err = cgroup.GetParam("cpuacct/lxc/"+container,
+			"cgroup.procs")
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, str := range strings.Split(pids, "\n") {
+		pid, err := strconv.Atoi(str)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, pid)
+	}
+	return result, nil
 }
