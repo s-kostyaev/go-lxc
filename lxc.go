@@ -26,8 +26,8 @@ func GetMemoryUsage(container string) (int, error) {
 	return usage, err
 }
 
-func GetPids(container string) ([]int, error) {
-	result := []int{}
+func GetPids(container string) ([]int32, error) {
+	result := []int32{}
 	pids, err := cgroup.GetParam("cpuacct/lxc/"+container,
 		"cgroup.procs")
 	if err != nil {
@@ -42,7 +42,7 @@ func GetPids(container string) ([]int, error) {
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, pid)
+		result = append(result, int32(pid))
 	}
 	return result, nil
 }
