@@ -1,7 +1,9 @@
 package lxc
 
 import (
+	"bytes"
 	"github.com/s-kostyaev/go-cgroup"
+	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -45,4 +47,47 @@ func GetMemoryPids(container string) ([]int32, error) {
 		result = append(result, int32(pid))
 	}
 	return result, nil
+}
+
+func IsTmpTmpfs(container string) (bool, error) {
+	cmd := exec.Command(
+		"lxc-attach", "-e", "-n", container, "--", "/bin/mount",
+	)
+	cmd.Stdout = &bytes.Buffer{}
+	if err := cmd.Run(); err != nil {
+		return false, err
+	}
+	mounts := strings.Split(strings.Trim(cmd.Stdout.(*bytes.Buffer).String(),
+		"\n"), "\n")
+	for _, mount := range mounts {
+		if strs := strings.Fields(mount); strs[2] == "/tmp" &&
+			strs[0] == "tmpfs" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func GetTmpUsageMb(container string) (int, error) {
+	cmd := exec.Command(
+		"lxc-attach", "-e", "-n", container, "--", "/usr/bin/du", "-ms", "/tmp",
+	)
+	cmd.Stdout = &bytes.Buffer{}
+	if err := cmd.Run(); err != nil {
+		return 0, err
+	}
+	usage := strings.Fields(cmd.Stdout.(*bytes.Buffer).String())[0]
+	result, err := strconv.Atoi(usage)
+	return result, err
+}
+
+func ClearTmp(container string) error {
+	cmd := exec.Command(
+		"lxc-attach", "-e", "-n", container, "--",
+		"/bin/sh", "-c", "rm /tmp/* /tmp/.* -rf",
+	)
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
 }
