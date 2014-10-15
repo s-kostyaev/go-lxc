@@ -26,13 +26,13 @@ func GetMemoryUsage(container string) (int, error) {
 	return usage, err
 }
 
-func GetPids(container string) ([]int32, error) {
+func GetMemoryPids(container string) ([]int32, error) {
 	result := []int32{}
-	pids, err := cgroup.GetParam("cpuacct/lxc/"+container,
-		"cgroup.procs")
+	pids, err := cgroup.GetParam("memory/lxc/"+container,
+		"tasks")
 	if err != nil {
-		pids, err = cgroup.GetParam("cpuacct/lxc/"+container,
-			"cgroup.procs")
+		pids, err = cgroup.GetParam("memory/lxc/"+container,
+			"tasks")
 		if err != nil {
 			return nil, err
 		}
