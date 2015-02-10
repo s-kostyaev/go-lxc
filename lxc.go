@@ -8,6 +8,15 @@ import (
 	"strings"
 )
 
+type Container struct {
+	Name   string   `json:"name"`
+	Host   string   `json:"host"`
+	Status string   `json:"status"`
+	Image  []string `json:"image"`
+	Ip     string   `json:"ip"`
+	Key    string   `json:"key"`
+}
+
 func GetMemoryLimit(container string) (int, error) {
 	limit, err := cgroup.GetParamInt("memory/lxc/"+container,
 		cgroup.MemoryLimit)
@@ -35,6 +44,25 @@ func GetMemoryPids(container string) ([]int32, error) {
 		result = append(result, int32(pid))
 	}
 	return result, nil
+}
+
+func GetCpuTicks() (ticks int, err error) {
+	stats, err := cgroup.GetParam("cpu/lxc/", "cpuacct.stat")
+	if err != nil {
+		return 0, err
+	}
+
+	userTime, err := strconv.Atoi(strings.Fields(string(stats))[1])
+	if err != nil {
+		return 0, err
+	}
+
+	systemTime, err := strconv.Atoi(strings.Fields(string(stats))[3])
+	if err != nil {
+		return 0, err
+	}
+
+	return userTime + systemTime, nil
 }
 
 func IsTmpTmpfs(container string) (bool, error) {
