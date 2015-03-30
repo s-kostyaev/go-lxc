@@ -107,3 +107,14 @@ func ClearTmp(container string) error {
 	}
 	return nil
 }
+
+func GetRootFS(container string) (string, error) {
+	cmd := exec.Command("/usr/bin/grep", "-e", "lxc.rootfs", "/var/lib/lxc/"+
+		container+"/config")
+	cmd.Stdout = &bytes.Buffer{}
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+	result := strings.Fields(cmd.Stdout.(*bytes.Buffer).String())[2]
+	return result, nil
+}
