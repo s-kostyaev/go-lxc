@@ -2,10 +2,16 @@ package lxc
 
 import (
 	"bytes"
+	"errors"
 	"github.com/s-kostyaev/go-cgroup"
+	"io/ioutil"
 	"os/exec"
 	"strconv"
 	"strings"
+)
+
+const (
+	configPathPrefix = "/var/lib/lxc/"
 )
 
 type Container struct {
@@ -109,12 +115,37 @@ func ClearTmp(container string) error {
 }
 
 func GetRootFS(container string) (string, error) {
-	cmd := exec.Command("/usr/bin/grep", "-e", "lxc.rootfs", "/var/lib/lxc/"+
-		container+"/config")
-	cmd.Stdout = &bytes.Buffer{}
-	if err := cmd.Run(); err != nil {
+	return GetConfigItem(container, "lxc.rootfs")
+}
+
+func GetContainers() ([]string, error) {
+	cmd := exec.Command("/usr/bin/lxc-ls", "-1")
+	list, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(strings.Trim(string(list), "\n"), "\n"), nil
+}
+
+func GetState(container string) (string, error) {
+	cmd := exec.Command("/usr/bin/lxc-info", "-sHn", container)
+	info, err := cmd.Output()
+	if err != nil {
 		return "", err
 	}
-	result := strings.Fields(cmd.Stdout.(*bytes.Buffer).String())[2]
-	return result, nil
+	return strings.Trim(string(info), "\n"), nil
+}
+
+func GetConfigItem(container, key string) (string, error) {
+	prefix := key + " = "
+	buf, err := ioutil.ReadFile(configPathPrefix + container + "/config")
+	if err != nil {
+		return "", err
+	}
+	for _, string := range strings.Split(string(buf), "\n") {
+		if strings.HasPrefix(string, prefix) {
+			return strings.TrimPrefix(string, prefix), nil
+		}
+	}
+	return "", errors.New("Could not find item in config")
 }
