@@ -14,15 +14,6 @@ const (
 	configPathPrefix = "/var/lib/lxc/"
 )
 
-type Container struct {
-	Name   string   `json:"name"`
-	Host   string   `json:"host"`
-	Status string   `json:"status"`
-	Image  []string `json:"image"`
-	Ip     string   `json:"ip"`
-	Key    string   `json:"key"`
-}
-
 func GetMemoryLimit(container string) (int, error) {
 	limit, err := cgroup.GetParamInt("memory/lxc/"+container,
 		cgroup.MemoryLimit)
